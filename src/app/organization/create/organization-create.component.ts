@@ -2,6 +2,8 @@ import { Component, ElementRef, OnInit } from '@angular/core';
 import { FormGroup, Validators, FormBuilder } from '@angular/forms';
 import { OrganizationService } from '../common/organization.service';
 import { FormConstantsService } from '../../_services/form-constants.service';
+import { ImageUploaderService, ImageReaderResponse } from '../../_services/image-uploader.service';
+import { ImageDisplayService } from '../../_services/image-display.service';
 
 @Component({
   selector: 'my-create-organization',
@@ -12,12 +14,13 @@ import { FormConstantsService } from '../../_services/form-constants.service';
 export class OrganizationCreateComponent implements OnInit {
   public categories: String[];
   public countries: any[];
-  private editOrg = false; // TODO: Set editOrg on init. Need to know edit/add when saving changes
+  private editOrg = false;
   public organization = this.initOrganization();
   public organizationForm: FormGroup;
   public formPlaceholder: {[key: string]: any} = {};
   public shortDescMaxLength = 255;
   public states: String[];
+  private logoData: ImageReaderResponse;
 
   // RegEx validators
   private einValidRegEx = /^[1-9]\d?-\d{7}$/;
@@ -31,22 +34,44 @@ export class OrganizationCreateComponent implements OnInit {
   constructor(public fb: FormBuilder,
               private organizationService: OrganizationService,
               private fc: FormConstantsService,
-              private el: ElementRef) { }
+              private el: ElementRef,
+              private imageDisplay: ImageDisplayService,
+              private imageUploader: ImageUploaderService ) { }
 
   ngOnInit(): void {
     this.getFormConstants();
+
+    // Placeholder values for testing purposes
+    // TODO: remove later as needed
+    this.organization = {
+      logo: '',
+      name: 'test org',
+      website: 'http://test.org',
+      email: 'test@test.org',
+      phone: '(000)-123-4567',
+      ein: '',
+      category: '',
+      address1: '1234 test ave',
+      address2: '',
+      city: 'New York',
+      state: 'AK',
+      country: 'USA',
+      zip: '12345',
+      briefDescription: 'this is a short description',
+      detailedDescription: 'this is a long description'
+    }
 
     if (this.editOrg) { // edit existing org
       this.initForm();
       // TODO: Pass variable to getOrganization() instead of hard-coded value
       this.organizationService.getOrganization(2)
-          .subscribe(
-            res => {
-              this.organization = res;
-              this.editOrg = true;
-              this.initForm();
-            }, this.handleError
-          );
+        .subscribe(
+          res => {
+            this.organization = res;
+            this.editOrg = true;
+            this.initForm();
+          }, this.handleError
+        );
     } else { // add new org
       this.editOrg = null;
       this.initForm();
@@ -102,6 +127,15 @@ export class OrganizationCreateComponent implements OnInit {
     };
   }
 
+  onUploadLogo(event): void {
+    this.imageUploader
+        .readImage(event)
+        .subscribe(res => { 
+          this.organization.logo = res.base64Image
+          this.logoData = res
+        })
+  }
+
   onSubmit(): void {
     if (this.editOrg) {
     } else {
@@ -113,21 +147,19 @@ export class OrganizationCreateComponent implements OnInit {
             // TODO: Change this according to back-end feature changes
             const results: Array<any> = res;
             const body = this.organizationForm.value;
+            
             body.id = results[results.length - 1].id + 1;
             body.description = body.shortDescription;
-            body.status = 'ACTIVE';
-
-            return this.organizationService
-                       .createOrganization(body)
-                       .toPromise();
+            body.status = 'A';
+            
+            this.organizationService
+                .saveLogo(body.id, this.logoData.formData)
+                .toPromise()
+                .then(res => this.organizationService.createOrganization(body))
           })
-          .then(
-            res => console.log('Successfully created organization'),
-            err => this.handleError)
-          .catch(this.handleError);
     }
   }
-
+  
   private handleError(err): void {
     console.error('An error occurred', err);
   }

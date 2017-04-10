@@ -37,7 +37,9 @@ export class OrganizationService {
   }
 
   createOrganization(organization: any): Observable<Response> {
-    return this.http.post(`${organizationUrl}`, organization);
+    return this.http
+               .post(`${organizationUrl}`, organization)
+               .catch(this.handleError)
   }
 
   delete(id: number): Observable<Response> {
@@ -45,20 +47,24 @@ export class OrganizationService {
   }
 
   saveLogo(id: number, formData: FormData): Observable<Response> {
+    console.log(id)
     return this.http
-               .post(`${organizationUrl}/${id}/logo`,
-                 formData);
+               .post(`${organizationUrl}/${id}/logo`, formData)
+               .catch(this.handleError)
   }
 
   retrieveLogo(id: number): Observable<Response> {
-    return this.http.get(
-      `${organizationUrl}/${id}/logo`
-    );
+    return this.http.get(`${organizationUrl}/${id}/logo`);
   }
 
   getUserOrganization(id: number): Observable<Organization> {
       return this.http.get(
       `${organizationUrl}/user/${id}`
       ).map(res => res.json());
+  }
+
+  private handleError(error: any): Promise<any> {
+    console.error('An error occurred', error); // for demo purposes only
+    return Promise.reject(error.message || error);
   }
 }
