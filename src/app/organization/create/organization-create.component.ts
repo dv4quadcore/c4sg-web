@@ -86,27 +86,20 @@ export class OrganizationCreateComponent implements OnInit {
   onUploadLogo(event): void {
     this.imageUploader
         .readImage(event)
-        .subscribe(res => { 
-          this.organization.logo = res.base64Image
-          this.logoData = res
-        })
+        .subscribe(res => {
+          this.organization.logo = res.base64Image;
+          this.logoData = res;
+        });
   }
 
   onSubmit(): void {
+    const body = this.organizationForm.value;
     this.organizationService
-      .getOrganizations()
+      .createOrganization(body)
       .toPromise()
-      .then(res => {
-        const results: Array<any> = res;
-        const body = this.organizationForm.value;
-        return this.organizationService
-          .createOrganization(body)
-          .toPromise();
-      })
       .then(
           response => {
              console.log('Successfully created organization');
-             console.log(response.json());
              this.organization = response.json().organization;
              return this.organization.id;
         },
@@ -114,7 +107,7 @@ export class OrganizationCreateComponent implements OnInit {
       .then(id => {
         return this.organizationService
           .saveLogo(id, this.logoData.formData)
-          .toPromise()
+          .toPromise();
       }, this.handleError)
       .then(res => {
         this.router.navigate(['/nonprofit/view/' + this.organization.id]);

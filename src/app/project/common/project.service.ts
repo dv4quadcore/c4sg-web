@@ -47,11 +47,11 @@ export class ProjectService {
                .catch(this.handleError);
   }
 
-  add(project: Project): Observable<Project[]> {
+  add(project: Project): Observable<Response> {
     const url = projectUrl;
     return this.http
                .post(url, project, {headers: this.headers})
-               .map((res: Response) => res.json())
+               .map(this.extractData)
                .catch(this.handleError);
   }
 
@@ -82,6 +82,22 @@ export class ProjectService {
     const url = projectUrl + '/' + id + '/image';
     return this.http
           .get(url);
+  }
+
+  saveImage(id: number, formData: FormData): Observable<Response> {
+    const url = projectUrl + '/' + id + '/image';
+    return this.http.post(url, formData);
+  }
+
+  private extractData(res: Response) {
+    let body;
+
+    // check if empty, before call json
+    if (res.text()) {
+        body = res.json();
+    }
+
+    return body || {};
   }
 
   private handleError(error: any): Promise<any> {
